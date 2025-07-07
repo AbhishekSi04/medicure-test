@@ -1,0 +1,20 @@
+{
+  "name": "medicare-signaling-server",
+  "version": "1.0.0",
+  "description": "WebRTC signaling server for MediCare video calls",
+  "main": "signaling-server.js",
+  "scripts": {
+    "start": "node signaling-server.js",
+    "dev": "nodemon signaling-server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

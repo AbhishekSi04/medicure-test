@@ -1,0 +1,7 @@
+
+node_modules/
+.env
+.env.*
+my-app/.next/
+signaling-server/node_modules/
+chat-server/node_modules/

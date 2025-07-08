@@ -57,8 +57,12 @@ export function PendingPayouts({ payouts }: PendingPayoutsProps) {
       await approvePayout(payoutId);
       toast.success("Payout approved!");
       // Optionally: refetch payouts here
-    } catch (err: any) {
-      toast.error(err.message || "Failed to approve payout");
+    } catch (err: unknown) {
+      let message = "Failed to approve payout";
+      if (err && typeof err === "object" && "message" in err && typeof (err as any).message === "string") {
+        message = (err as { message: string }).message;
+      }
+      toast.error(message);
     } finally {
       setLoadingId(null);
       router.refresh();

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -60,7 +61,7 @@ export function AvailabilitySettings({ slots }: AvailabilitySettingsProps) {
 
     const formData = new FormData();
 
-    const today = new Date().toISOString().split("T")[0];
+    // const today = new Date().toISOString().split("T")[0];
 
     // Create date objects
     const startDate = createLocalDateFromTime(data.startTime);
@@ -89,8 +90,8 @@ export function AvailabilitySettings({ slots }: AvailabilitySettingsProps) {
   const formatTimeString = (dateString: string) => {
     try {
       return format(new Date(dateString), "h:mm a");
-    } catch (e) {
-      return "Invalid time";
+    } catch (e:any) {
+      return (e.message || "Invalid time");
     }
   };
 

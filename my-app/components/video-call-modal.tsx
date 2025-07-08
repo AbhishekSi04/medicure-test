@@ -20,12 +20,11 @@ export function VideoCallModal({
   onClose,
   appointmentId,
   userRole,
-  videoSessionId,
 }: VideoCallModalProps) {
   const [isCallAccepted, setIsCallAccepted] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
-  const [isCallActive, setIsCallActive] = useState(false)
+  // const [isCallActive, setIsCallActive] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   
   const localVideoRef = useRef<HTMLVideoElement>(null)
@@ -147,7 +146,7 @@ export function VideoCallModal({
         // Handle call acceptance
         socket.on("call-accepted", () => {
           setIsCallAccepted(true)
-          setIsCallActive(true)
+          // setIsCallActive(true)
         })
 
         // Handle call rejection
@@ -185,7 +184,7 @@ export function VideoCallModal({
       socketRef.current.emit("call-accepted", { appointmentId })
     }
     setIsCallAccepted(true)
-    setIsCallActive(true)
+    // setIsCallActive(true)
   }
 
   const handleRejectCall = () => {
@@ -225,7 +224,7 @@ export function VideoCallModal({
     if (socketRef.current) {
       socketRef.current.disconnect()
     }
-    setIsCallActive(false)
+    // setIsCallActive(false)
     onClose()
   }
 

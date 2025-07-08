@@ -13,12 +13,12 @@ import DoctorMessages from "./_components/doctor-messages";
 export default async function DoctorDashboardPage() {
   const user = await getCurrentUser();
 
-  const [appointmentsData, availabilityData, earningsData, payoutsData] =
+  const [appointmentsData, availabilityData] =
     await Promise.all([
       getDoctorAppointments(),
       getDoctorAvailability(),
-      getDoctorEarnings(),
-      getDoctorPayouts(),
+      // getDoctorEarnings(),
+      // getDoctorPayouts(),
     ]);
 
   //   // Redirect if not a doctor

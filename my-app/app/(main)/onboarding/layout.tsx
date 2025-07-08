@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getCurrentUser } from "@/actions/onboarding";
 import { redirect } from "next/navigation";
 

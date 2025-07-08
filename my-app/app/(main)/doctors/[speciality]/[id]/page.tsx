@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getDoctorById, getAvailableTimeSlots } from "@/actions/appointments";
 import  DoctorProfile  from "./_components/doctor-profile";
 import { redirect } from "next/navigation";
@@ -18,7 +19,7 @@ export default async function DoctorProfilePage({ params }:any) {
         availableDays={slotsData.days || []}
       />
     );
-  } catch (error) {
+  } catch (error:any) {
     console.error("Error loading doctor profile:", error);
     redirect("/doctors");
   }

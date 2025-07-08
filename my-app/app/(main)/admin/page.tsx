@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { PendingDoctors } from "./_components/pending-doctors";
 import { VerifiedDoctors } from "./_components/verified-doctors";
 import { getPendingDoctors, getVerifiedDoctors, AdminResponse, getPendingPayouts } from "@/actions/admin";

@@ -54,7 +54,7 @@ export default function AdminPage() {
         // else{
         //   await fetchPendingPayouts(new FormData());
         // }
-      } catch (error) {
+      } catch (error:any) {
         toast.error("Failed to fetch doctors data");
       } finally {
         setIsInitialLoad(false);

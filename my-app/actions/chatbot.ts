@@ -95,7 +95,7 @@ export async function sendChatMessage(
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "deepseek-r1-distill-llama-70b",
+        model: "llama-3.3-70b-versatile",
         messages,
         max_tokens: 512,
         temperature: 0.7,

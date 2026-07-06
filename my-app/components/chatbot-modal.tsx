@@ -29,7 +29,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history] = useState<ChatMessage[] | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // const { user } = useUser();

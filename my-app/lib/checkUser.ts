@@ -15,24 +15,46 @@ export const checkUser = async () => {
         }
         
         try {
-                const loggedInUser = await db.user.findUnique({
+                // First check if user exists by clerkUserId
+                let loggedInUser = await db.user.findUnique({
                     where: {
                         clerkUserId: user.id
                     },
-                    // select: {
-                    //     id:true
-                    // },
                 })
+                
                 if(loggedInUser) {
                     return loggedInUser
                 }
-                // if not exist so create a new user
+                
+                // If not found by clerkUserId, check if user exists by email
+                loggedInUser = await db.user.findUnique({
+                    where: {
+                        email: user.emailAddresses[0].emailAddress
+                    },
+                })
+                
+                if(loggedInUser) {
+                    // Update the existing user with the new clerkUserId
+                    loggedInUser = await db.user.update({
+                        where: {
+                            email: user.emailAddresses[0].emailAddress
+                        },
+                        data: {
+                            clerkUserId: user.id,
+                            name: user.firstName + " " + user.lastName,
+                        }
+                    })
+                    return loggedInUser
+                }
+                
+                // If no user exists at all, create a new one
                 const name = user.firstName + " " + user.lastName;
                 const newUser = await db.user.create({
                     data: {
                         clerkUserId: user.id,
                         name,
                         email: user.emailAddresses[0].emailAddress,
+                        role: "UNASSIGNED", // Explicitly set default role
                         transactions:{
                                 create:{
                                         type:"CREDIT_PURCHASE",

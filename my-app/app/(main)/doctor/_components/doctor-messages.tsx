@@ -27,9 +27,9 @@ export default function DoctorMessages() {
 
     return (
         <div className=" pb-4">
-            <h1 className="text-xl font-bold mb-4 ">All Patient Messages</h1>
+            <h1 className="text-xl font-bold mb-4 text-zinc-900 dark:text-white">All Patient Messages</h1>
             {chatRooms.length === 0 ? (
-                <div className="text-gray-500">No messages from patients yet.</div>
+                <div className="text-gray-500 dark:text-gray-400">No messages from patients yet.</div>
             ) : (
                 <div className="space-y-4">
                     {chatRooms.map((room) => {
@@ -38,11 +38,11 @@ export default function DoctorMessages() {
                         return (
                             <div
                                 key={room.id}
-                                className="flex items-center justify-between border p-4 rounded"
+                                className="flex items-center justify-between border border-zinc-200 dark:border-zinc-700 p-4 rounded-lg bg-white dark:bg-muted/30 shadow-sm"
                             >
-                                <div className=" bg-muted/30">
-                                    <div className="font-semibold">{patient?.name || "Unknown Patient"}</div>
-                                    <div className="text-sm text-gray-600">
+                                <div>
+                                    <div className="font-semibold text-zinc-900 dark:text-white">{patient?.name || "Unknown Patient"}</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                         {lastMessage
                                             ? `${lastMessage.sender?.name || "Unknown"}: ${lastMessage.content}`
                                             : "No messages yet."}

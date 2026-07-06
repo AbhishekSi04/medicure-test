@@ -168,4 +168,62 @@ export async function getDoctorAppointments() {
   }
 
 
-  
+/**
+ * Update doctor's profile information
+ */
+export async function updateDoctorProfile(formData: FormData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const doctor = await db.user.findUnique({
+      where: {
+        clerkUserId: userId,
+        role: "DOCTOR",
+      },
+    });
+
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+
+    const specialty = formData.get("specialty") as string;
+    const experience = parseInt(formData.get("experience") as string, 10);
+    const description = formData.get("description") as string;
+    const credentialUrl = formData.get("credentialUrl") as string;
+
+    // Validate inputs
+    if (!specialty || !experience || !description || !credentialUrl) {
+      throw new Error("All fields are required");
+    }
+
+    if (experience < 1 || experience > 70) {
+      throw new Error("Experience must be between 1 and 70 years");
+    }
+
+    if (description.length < 20) {
+      throw new Error("Description must be at least 20 characters");
+    }
+
+    const updatedDoctor = await db.user.update({
+      where: {
+        clerkUserId: userId,
+      },
+      data: {
+        specialty,
+        experience,
+        description,
+        credentialUrl,
+      },
+    });
+
+    revalidatePath("/doctor");
+    return { success: true, doctor: updatedDoctor };
+  } catch (error: any) {
+    console.error("Failed to update doctor profile:", error);
+    throw new Error("Failed to update profile: " + error.message);
+  }
+}

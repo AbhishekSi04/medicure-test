@@ -1,39 +1,47 @@
-// chat-server.js
-require('dotenv').config();
+require("dotenv").config();
+
+const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 
-const httpServer = createServer();
+const app = express();
+
+// Health check route
+app.get("/", (req, res) => {
+    res.send("Chat Server is running 🚀");
+});
+
+const httpServer = createServer(app);
+
 const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000", // Use environment variable in production
-    methods: ["GET", "POST"]
-  }
+    cors: {
+        origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+        methods: ["GET", "POST"],
+    },
 });
 
-// Store users in rooms based on chatRoomId
 io.on("connection", (socket) => {
-  socket.on("joinRoom", ({ chatRoomId }) => {
-    socket.join(chatRoomId);
-  });
+    console.log("User connected:", socket.id);
 
-  socket.on("leaveRoom", ({ chatRoomId }) => {
-    socket.leave(chatRoomId);
-  });
+    socket.on("joinRoom", ({ chatRoomId }) => {
+        socket.join(chatRoomId);
+    });
 
-  socket.on("sendMessage", ({ chatRoomId, message }) => {
-    // Broadcast to everyone in the room except sender
-    socket.to(chatRoomId).emit("receiveMessage", message);
-    // Optionally: Save message to DB here
-  });
+    socket.on("leaveRoom", ({ chatRoomId }) => {
+        socket.leave(chatRoomId);
+    });
 
-  socket.on("disconnect", () => {
-    // Handle disconnect logic if needed
-  });
+    socket.on("sendMessage", ({ chatRoomId, message }) => {
+        socket.to(chatRoomId).emit("receiveMessage", message);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("Disconnected:", socket.id);
+    });
 });
 
+const PORT = process.env.PORT || 3002;
 
-const PORT = process.env.PORT || process.env.CHAT_PORT || 3002; // Use different port from signaling server
-httpServer.listen(PORT, () => {
-  console.log(`Chat Socket.IO server running on port ${PORT}`);
-});
+httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`Chat server running on ${PORT}`);
+});

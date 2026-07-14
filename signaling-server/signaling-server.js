@@ -14,9 +14,11 @@ const httpServer = createServer((req, res) => {
   }
 });
 
+const allowedOrigin = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, '');
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    origin: allowedOrigin,
     methods: ["GET", "POST"],
   },
 });

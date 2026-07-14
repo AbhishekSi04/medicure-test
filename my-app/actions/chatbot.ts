@@ -1,7 +1,7 @@
 'use server'
 
-import { checkUser } from "@/lib/checkUser";
 import { db } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
 
 export interface ChatMessage {
@@ -62,15 +62,27 @@ export async function sendChatMessage(
   conversationHistory: ChatMessage[] = []
 ): Promise<ChatResponse> {
   try {
-    // 1. Authenticate user
-    const user = await checkUser();
-    if ('error' in user) {
-      console.error('[sendChatMessage] Auth failed:', user.error, {
-        hasGroqKey: !!process.env.GROQ_API_KEY,
+    // 1. Authenticate user using auth() — same pattern as all other working server actions
+    const { userId: clerkUserId } = await auth();
+    
+    if (!clerkUserId) {
+      console.error('[sendChatMessage] auth() returned no userId. Clerk env vars may be missing.', {
         hasClerkSecret: !!process.env.CLERK_SECRET_KEY,
+        hasPublishableKey: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
       });
-      return { message: '', error: 'Authentication required' };
+      return { message: '', error: 'Authentication required. Please sign in.' };
     }
+
+    // 2. Look up user in database
+    let user = await db.user.findUnique({
+      where: { clerkUserId },
+    });
+
+    if (!user) {
+      console.error('[sendChatMessage] User not found in DB for clerkUserId:', clerkUserId);
+      return { message: '', error: 'User not found. Please complete onboarding first.' };
+    }
+
     const userId = user.id;
 
     // 2. Validate input

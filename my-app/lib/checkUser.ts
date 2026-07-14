@@ -7,8 +7,11 @@ import { db } from "./prisma";
 export const checkUser = async () => {
         const user = await currentUser();
 
-        console.log(user);
         if(!user) {
+            console.error("[checkUser] currentUser() returned null. Clerk auth failed.", {
+                hasSecretKey: !!process.env.CLERK_SECRET_KEY,
+                hasPublishableKey: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+            });
             return {
                 error: "User not found"
             }

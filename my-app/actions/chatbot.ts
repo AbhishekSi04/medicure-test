@@ -65,6 +65,10 @@ export async function sendChatMessage(
     // 1. Authenticate user
     const user = await checkUser();
     if ('error' in user) {
+      console.error('[sendChatMessage] Auth failed:', user.error, {
+        hasGroqKey: !!process.env.GROQ_API_KEY,
+        hasClerkSecret: !!process.env.CLERK_SECRET_KEY,
+      });
       return { message: '', error: 'Authentication required' };
     }
     const userId = user.id;

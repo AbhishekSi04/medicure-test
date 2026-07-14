@@ -26,6 +26,7 @@ export function VideoCallModal({
   const [isVideoOff, setIsVideoOff] = useState(false)
   // const [isCallActive, setIsCallActive] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [mediaError, setMediaError] = useState<string | null>(null)
   
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -40,6 +41,7 @@ export function VideoCallModal({
     const initializeWebRTC = async () => {
       try {
         setIsLoading(true)
+        setMediaError(null)
         // Connect to signaling server
         const socket = io(process.env.NEXT_PUBLIC_SIGNALING_SERVER_URL || "http://localhost:3001")
         socketRef.current = socket
@@ -47,11 +49,46 @@ export function VideoCallModal({
         // Join the room for this appointment
         socket.emit("join-room", appointmentId)
 
-        // Get user media
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        })
+        // Get user media with progressive fallback
+        let stream: MediaStream | null = null
+        
+        try {
+          // Try video + audio first
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          })
+        } catch (mediaErr: any) {
+          console.warn("Video+audio failed, trying audio only:", mediaErr.name)
+          
+          if (mediaErr.name === "NotReadableError" || mediaErr.name === "NotFoundError" || mediaErr.name === "AbortError") {
+            // Camera unavailable — try audio only
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: true,
+              })
+              setMediaError("Camera unavailable — joined with audio only. Close other apps using your camera and retry.")
+              toast.warning("Camera unavailable. Joined with audio only.")
+            } catch (audioErr) {
+              console.error("Audio-only also failed:", audioErr)
+              setMediaError("Could not access camera or microphone. Please check browser permissions and close other apps using your camera.")
+              toast.error("Could not access camera or microphone. Check browser permissions.")
+            }
+          } else if (mediaErr.name === "NotAllowedError") {
+            setMediaError("Camera/microphone permission denied. Please allow access in your browser settings.")
+            toast.error("Permission denied. Please allow camera/microphone access.")
+          } else {
+            setMediaError("Failed to access media devices: " + mediaErr.message)
+            toast.error("Failed to access media devices.")
+          }
+        }
+
+        if (!stream) {
+          setIsLoading(false)
+          return
+        }
+
         localStreamRef.current = stream
 
         // Set local video stream
@@ -243,6 +280,13 @@ export function VideoCallModal({
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 z-10">
                 <div className="text-white text-lg font-semibold animate-pulse">Connecting...</div>
+              </div>
+            )}
+            {mediaError && (
+              <div className="absolute inset-x-0 top-2 flex justify-center z-20 px-4">
+                <div className="bg-yellow-500/90 text-black text-xs sm:text-sm font-medium rounded-lg px-4 py-2 max-w-md text-center shadow-lg">
+                  {mediaError}
+                </div>
               </div>
             )}
             <video

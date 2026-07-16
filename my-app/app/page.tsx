@@ -141,17 +141,19 @@ export default function Home() {
   return (
     <div className="min-h-screen ">
       
-      {/* Chatbot Floating Button (fixed bottom right) */}
-      <SignedIn>
+      {/* Chatbot Floating Action Button */}
+      {!isChatbotOpen && (
         <button
           onClick={() => setIsChatbotOpen(true)}
-          className="fixed z-50 bottom-6 right-6 md:bottom-8 md:right-8 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-full shadow-lg p-4 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          aria-label="Open Health Assistant Chatbot"
+          className="fixed z-50 bottom-6 right-6 md:bottom-8 md:right-8 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full shadow-xl p-4 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:scale-105 active:scale-95"
+          aria-label="Open Health Assistant"
         >
+          {/* Pulse indicator */}
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
           <MessageCircle className="h-6 w-6" />
-          <span className="hidden md:inline font-semibold">Health Assistant</span>
+          <span className="hidden md:inline font-semibold text-sm pr-1">AI Health Assistant</span>
         </button>
-      </SignedIn>
+      )}
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">

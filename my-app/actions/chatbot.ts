@@ -1,148 +1,97 @@
 'use server'
 
-import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-
+import { retrieveRelevantContext } from "@/lib/medical-knowledge";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
 }
 
 export interface ChatResponse {
   message: string;
   error?: string;
+  retrievedTopics?: string[];
 }
 
-const SYSTEM_PROMPT = `You are a helpful healthcare assistant. You can provide general health information, answer medical questions, and offer guidance on common health concerns.\n\nIMPORTANT: You are not a substitute for professional medical advice. Always recommend consulting with a healthcare provider for serious symptoms. You cannot diagnose medical conditions. For emergencies, always call emergency services.`;
-
-// Save a chat message (user or assistant) to the database
-async function saveChatMessageToDb(userId: string, role: 'user' | 'assistant', content: string) {
-  await db.chatMessage.create({
-    data: {
-      userId,
-      role,
-      content,
-      // timestamp is set automatically
-    }
-  });
-}
-
-// Get all chat messages for a user, ordered by time
-export async function getChatHistory(userId: string): Promise<ChatMessage[]> {
-  // Find the user by their Clerk ID and include their chat messages
-  const userWithChats = await db.user.findUnique({
-    where: { clerkUserId: userId },
-    include: {
-      // Order the messages by timestamp
-      chatMessages: {
-        orderBy: {
-          timestamp: 'asc',
-        },
-      },
-    },
-  });
-
-  // If no user or no chats are found, return an empty array
-  if (!userWithChats || !userWithChats.chatMessages) {
-    return [];
-  }
-
-  // Map the database messages to the ChatMessage type for the frontend
-  return userWithChats.chatMessages.map(msg => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-    timestamp: msg.timestamp
-  }));
-}
-
+/**
+ * RAG-Powered Healthcare Assistant
+ *
+ * Pipeline:
+ * 1. Retrieve — semantic keyword search against medical knowledge base
+ * 2. Augment  — inject retrieved medical context into LLM system prompt
+ * 3. Generate — Groq LLM produces a grounded, context-aware response
+ *
+ * No authentication walls, no DB storage — pure AI pipeline.
+ */
 export async function sendChatMessage(
   message: string,
   conversationHistory: ChatMessage[] = []
 ): Promise<ChatResponse> {
-  try {
-    // 1. Authenticate user using auth() — same pattern as all other working server actions
-    const { userId: clerkUserId } = await auth();
-    
-    if (!clerkUserId) {
-      console.error('[sendChatMessage] auth() returned no userId. Clerk env vars may be missing.', {
-        hasClerkSecret: !!process.env.CLERK_SECRET_KEY,
-        hasPublishableKey: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-      });
-      return { message: '', error: 'Authentication required. Please sign in.' };
-    }
 
-    // 2. Look up user in database
-    let user = await db.user.findUnique({
-      where: { clerkUserId },
-    });
+  // ── Step 1: RETRIEVE ─────────────────────────────────────────────────────
+  // Search the medical knowledge base for relevant context chunks
+  const retrievedContext = retrieveRelevantContext(message, 3);
 
-    if (!user) {
-      console.error('[sendChatMessage] User not found in DB for clerkUserId:', clerkUserId);
-      return { message: '', error: 'User not found. Please complete onboarding first.' };
-    }
+  // ── Step 2: AUGMENT ──────────────────────────────────────────────────────
+  // Build the RAG-enhanced system prompt with retrieved medical knowledge
+  const systemPrompt = `You are MediCure AI — an intelligent healthcare assistant powered by a medical knowledge base. You provide accurate, evidence-based health information.
 
-    const userId = user.id;
+${retrievedContext ? `## Retrieved Medical Context (Use this as your primary reference)\n\n${retrievedContext}\n\n---\n` : ""}
 
-    // 2. Validate input
-    if (!message.trim()) {
-      return { message: '', error: 'Message cannot be empty' };
-    }
+## Your Guidelines:
+- Provide clear, accurate, empathetic health information grounded in the retrieved context above
+- Use simple language that patients can understand; define medical terms when used
+- Always recommend consulting a qualified healthcare professional for diagnosis or treatment decisions
+- For emergencies (chest pain, difficulty breathing, signs of stroke, severe allergic reaction) — immediately direct to emergency services (911)
+- If the query is outside the retrieved context, provide general evidence-based guidance
+- Structure longer responses with clear headings or bullet points for readability
+- Be conversational and compassionate, not robotic
+- Never diagnose specific conditions in the user
 
-    // 3. Save the user's message to the database
-    await saveChatMessageToDb(userId, 'user', message);
+Remember: You are a supportive health information resource, not a replacement for professional medical care.`;
 
-    // 4. Prepare conversation for Groq API
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...conversationHistory.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: "user", content: message }
-    ];
+  // Build message array with conversation history for context continuity
+  const messages = [
+    { role: "system", content: systemPrompt },
+    // Include last 6 conversation turns for context (to stay within token limits)
+    ...conversationHistory.slice(-6).map(msg => ({
+      role: msg.role,
+      content: msg.content,
+    })),
+    { role: "user", content: message },
+  ];
 
-    // 5. Call the Groq API
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages,
-        max_tokens: 512,
-        temperature: 0.7,
-        top_p: 0.9,
-      }),
-    });
+  // ── Step 3: GENERATE ─────────────────────────────────────────────────────
+  // Call Groq LLM with the RAG-augmented prompt
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages,
+      max_tokens: 700,
+      temperature: 0.5,   // Lower temp for factual medical info
+      top_p: 0.9,
+    }),
+  });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("Groq API Error:", errorBody);
-      throw new Error(`Groq API request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const assistantMessage = data.choices?.[0]?.message?.content?.trim();
-
-    if (!assistantMessage) {
-      return { message: '', error: 'No response from the health assistant.' };
-    }
-
-    // 6. Save the assistant's reply to the database
-    await saveChatMessageToDb(userId, 'assistant', assistantMessage);
-
-    // 7. Return the assistant's reply
-    return { message: assistantMessage };
-
-  } catch (error) {
-    console.error('Chatbot error:', error);
-    return {
-      message: '',
-      error: 'Sorry, I encountered an error while processing your request. Please try again later.'
-    };
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("[RAG Chatbot] Groq API error:", errorBody);
+    throw new Error(`Groq API failed: ${response.status}`);
   }
+
+  const data = await response.json();
+  const reply = data.choices?.[0]?.message?.content?.trim();
+
+  if (!reply) {
+    throw new Error("Empty response from LLM");
+  }
+
+  return {
+    message: reply,
+  };
 }

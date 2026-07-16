@@ -158,7 +158,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
               <h2 className="text-sm font-semibold text-white leading-none">MediCure AI</h2>
               <div className="flex items-center gap-1 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[10px] text-blue-100">RAG-Powered Health Assistant</span>
+                <span className="text-[10px] text-blue-100">AI-Powered Health Assistant</span>
               </div>
             </div>
           </div>

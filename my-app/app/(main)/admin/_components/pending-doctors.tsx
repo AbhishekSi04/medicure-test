@@ -1,16 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X, User, Medal, FileText, ExternalLink } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Check, X, User, Medal, FileText, ExternalLink, Clock, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { updateDoctorStatus } from "@/actions/admin";
 import useFetch from "@/hooks/use-fetch";
-import { useEffect } from "react";
-import { BarLoader } from "react-spinners";
 import { useRouter } from "next/navigation";
 
-// Define the Doctor type
 type Doctor = {
   id: string;
   name: string | null;
@@ -49,237 +38,216 @@ export function PendingDoctors({ doctors }: PendingDoctorsProps) {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const router = useRouter();
 
-  // console.log("doctors are:",doctors);
+  const { loading, data, fn: submitStatusUpdate } = useFetch(updateDoctorStatus);
 
-  const {
-    loading,
-    data,
-    fn: submitStatusUpdate,
-  } = useFetch(updateDoctorStatus);
+  const handleViewDetails = (doctor: Doctor) => setSelectedDoctor(doctor);
+  const handleCloseDialog = () => setSelectedDoctor(null);
 
-  // Open doctor details dialog
-  const handleViewDetails = (doctor: Doctor) => {
-    setSelectedDoctor(doctor);
-  };
-
-  // Close doctor details dialog
-  const handleCloseDialog = () => {
-    setSelectedDoctor(null);
-  };
-
-  // Handle approve or reject doctor
-  const handleUpdateStatus = async (doctorId: string, status: "VERIFIED" | "REJECTED") => {
+  const handleUpdateStatus = async (
+    doctorId: string,
+    status: "VERIFIED" | "REJECTED"
+  ) => {
     if (loading) return;
-
     const formData = new FormData();
     formData.append("doctorId", doctorId);
     formData.append("status", status);
-
     await submitStatusUpdate(formData);
     setSelectedDoctor(null);
     router.refresh();
   };
 
   useEffect(() => {
-    if (data?.success) {
-      handleCloseDialog();
-      // router.refresh();
-    }
+    if (data?.success) handleCloseDialog();
   }, [data]);
 
   return (
     <div>
-      <Card className="bg-muted/30 border-emerald-900/20">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold dark:text-white text-slate-700">
-            Pending Doctor Verifications
-          </CardTitle>
-          <CardDescription>
-            Review and approve doctor applications
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* ── Section Card ── */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Pending Verifications
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Review and approve doctor applications
+            </p>
+          </div>
+          {doctors.length > 0 && (
+            <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs font-semibold">
+              {doctors.length} pending
+            </Badge>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="p-4 space-y-3">
           {doctors.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No pending verification requests at this time.
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
+                <Check className="w-7 h-7 text-emerald-500" />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">
+                All caught up!
+              </p>
+              <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
+                No pending verification requests at this time.
+              </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {doctors.map((doctor) => (
-                <Card
-                  key={doctor.id}
-                  className="bg-background border-emerald-900/20 hover:border-emerald-700/30 transition-all"
-                >
-                  <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-muted/20 rounded-full p-2">
-                          <User className="h-5 w-5 text-blue-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium dark:text-white text-black-900">
-                            {doctor.name || "Unnamed Doctor"}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {doctor.specialty || "No specialty"} • {doctor.experience || 0} years
-                            experience
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 self-end md:self-auto">
-                        <Badge
-                          variant="outline"
-                          className="bg-amber-900/20 border-amber-900/30 text-amber-600"
-                        >
-                          Pending
-                        </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(doctor)}
-                          className="border-emerald-900/30 hover:bg-muted/80"
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Doctor Details Dialog */}
-      {selectedDoctor && (
-        <Dialog open={!!selectedDoctor} onOpenChange={handleCloseDialog}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold dark:text-white text-slate-800">
-                Doctor Verification Details
-              </DialogTitle>
-              <DialogDescription>
-                Review the doctor&apos;s information carefully before making a
-                decision
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-6 py-4">
-              {/* Basic Info */}
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                <div className="space-y-1 flex-1">
-                  <h4 className="text-sm font-medium text-muted-foreground">
-                    Full Name
-                  </h4>
-                  <p className="text-base font-medium dark:text-white text-slate-700 break-words">
-                    {selectedDoctor.name || "Unnamed Doctor"}
-                  </p>
+            doctors.map((doctor) => (
+              <div
+                key={doctor.id}
+                className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-white dark:hover:bg-slate-800 transition-all"
+              >
+                {/* Doctor Info */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 dark:text-white text-sm">
+                      {doctor.name || "Unnamed Doctor"}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {doctor.specialty || "No specialty"} &bull;{" "}
+                      {doctor.experience || 0} yrs exp
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1 flex-1">
-                  <h4 className="text-sm font-medium text-muted-foreground">
-                    Email
-                  </h4>
-                  <p className="text-base font-medium dark:text-white text-slate-700 break-words">
-                    {selectedDoctor.email}
-                  </p>
-                </div>
-                <div className="space-y-1 flex-1">
-                  <h4 className="text-sm font-medium text-muted-foreground">
-                    Application Date
-                  </h4>
-                  <p className="text-base font-medium dark:text-white text-slate-700">
-                    {format(new Date(selectedDoctor.createdAt), "PPP")}
-                  </p>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+                  <Badge className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Pending
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(doctor)}
+                    className="text-xs border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-lg"
+                  >
+                    View Details
+                  </Button>
                 </div>
               </div>
+            ))
+          )}
+        </div>
+      </div>
 
-              <Separator className="bg-blue-900/20 dark:bg-blue-400/10" />
+      {/* ── Doctor Details Dialog ── */}
+      {selectedDoctor && (
+        <Dialog open={!!selectedDoctor} onOpenChange={handleCloseDialog}>
+          <DialogContent className="max-w-2xl rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-0 overflow-hidden">
+            {/* Dialog Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-white">
+                  Doctor Verification Review
+                </DialogTitle>
+                <DialogDescription className="text-blue-200 text-sm mt-0.5">
+                  Review the doctor&apos;s credentials before making a decision
+                </DialogDescription>
+              </DialogHeader>
+            </div>
 
-              {/* Professional Details */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Medal className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                  <h3 className="dark:text-white text-slate-700 font-medium">
-                    Professional Information
+            <div className="p-6 space-y-5">
+              {/* Basic Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { label: "Full Name", value: selectedDoctor.name || "Unnamed Doctor" },
+                  { label: "Email", value: selectedDoctor.email },
+                  {
+                    label: "Applied On",
+                    value: format(new Date(selectedDoctor.createdAt), "PPP"),
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
+                  >
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      {item.label}
+                    </p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-white break-words">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Professional Info */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Medal className="h-4 w-4 text-blue-500" />
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Professional Details
                   </h3>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground">
-                      Specialty
-                    </h4>
-                    <p className="dark:text-white text-slate-700">{selectedDoctor.specialty || "No specialty"}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Specialty</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">
+                      {selectedDoctor.specialty || "No specialty"}
+                    </p>
                   </div>
-
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground">
-                      Years of Experience
-                    </h4>
-                    <p className="dark:text-white text-slate-700">
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Experience</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">
                       {selectedDoctor.experience || 0} years
                     </p>
                   </div>
-
-                  <div className="space-y-1 col-span-2">
-                    <h4 className="text-sm font-medium text-muted-foreground">
+                  <div className="col-span-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
                       Credentials
-                    </h4>
-                    <div className="flex items-center flex-wrap gap-2">
-                      <a
-                        href={selectedDoctor.credentialUrl || "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-600 flex items-center"
-                      >
-                        View Credentials
-                        <ExternalLink className="h-4 w-4 ml-1" />
-                      </a>
-                    </div>
+                    </p>
+                    <a
+                      href={selectedDoctor.credentialUrl || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
+                    >
+                      View Credential Document
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
                   </div>
                 </div>
               </div>
 
-              <Separator className="bg-blue-900/20 dark:bg-blue-400/10" />
-
               {/* Description */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                  <h3 className="dark:text-white text-slate-700 font-medium">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-blue-500" />
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                     Service Description
                   </h3>
                 </div>
-                <p className="text-muted-foreground whitespace-pre-line">
+                <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line leading-relaxed">
                   {selectedDoctor.description || "No description provided"}
                 </p>
               </div>
             </div>
 
-            {loading && <BarLoader width={"100%"} color="#60A5FA" />}
-
-            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-between mt-4">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 px-6 pb-6 pt-2">
               <Button
                 variant="destructive"
-                onClick={() =>
-                  handleUpdateStatus(selectedDoctor.id, "REJECTED")
-                }
+                onClick={() => handleUpdateStatus(selectedDoctor.id, "REJECTED")}
                 disabled={loading}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-500 hover:bg-red-600 rounded-xl gap-2"
               >
-                <X className="mr-2 h-4 w-4" />
-                Reject
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                {loading ? "Processing..." : "Reject Application"}
               </Button>
               <Button
-                onClick={() =>
-                  handleUpdateStatus(selectedDoctor.id, "VERIFIED")
-                }
+                onClick={() => handleUpdateStatus(selectedDoctor.id, "VERIFIED")}
                 disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl gap-2 shadow-md"
               >
-                <Check className="mr-2 h-4 w-4" />
-                Approve
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {loading ? "Processing..." : "Approve Doctor"}
               </Button>
             </DialogFooter>
           </DialogContent>

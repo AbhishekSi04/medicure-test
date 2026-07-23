@@ -34,6 +34,7 @@ export function VideoCallModal({
 
   useEffect(() => {
     if (!isOpen) return
+    let offerInterval: NodeJS.Timeout;
 
     const initializeWebRTC = async () => {
       try {
@@ -95,9 +96,23 @@ export function VideoCallModal({
         })
 
         if (userRole === "DOCTOR") {
-          const offer = await peerConnection.createOffer()
-          await peerConnection.setLocalDescription(offer)
-          socket.emit("offer", { appointmentId, offer })
+          const makeOffer = async () => {
+             if (peerConnection.iceConnectionState === "connected" || peerConnection.iceConnectionState === "closed") {
+                 clearInterval(offerInterval);
+                 return;
+             }
+             if (peerConnection.signalingState === "have-local-offer") {
+                 socket.emit("offer", { appointmentId, offer: peerConnection.localDescription })
+             } else if (peerConnection.signalingState === "stable") {
+                 try {
+                     const offer = await peerConnection.createOffer()
+                     await peerConnection.setLocalDescription(offer)
+                     socket.emit("offer", { appointmentId, offer })
+                 } catch (e) { console.error("Offer creation error:", e) }
+             }
+          }
+          makeOffer();
+          offerInterval = setInterval(makeOffer, 3000);
         }
 
         socket.on("offer", async (offer: RTCSessionDescriptionInit) => {
@@ -127,6 +142,7 @@ export function VideoCallModal({
     initializeWebRTC()
 
     return () => {
+      if (offerInterval) clearInterval(offerInterval);
       localStreamRef.current?.getTracks().forEach((track) => track.stop())
       peerConnectionRef.current?.close()
       socketRef.current?.disconnect()

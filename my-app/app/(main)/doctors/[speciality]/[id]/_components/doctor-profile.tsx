@@ -40,7 +40,7 @@ interface DoctorProfileProps {
 
 export default function DoctorProfile({ doctor, availableDays }: DoctorProfileProps) {
   const router = useRouter()
-  const [selectedSlot, setSelectedSlot] = useState<{ startTime: string; endTime: string } | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<{ startTime: string; endTime: string; formatted?: string } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
@@ -155,76 +155,14 @@ export default function DoctorProfile({ doctor, availableDays }: DoctorProfilePr
                       </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {day.slots.map((slot) => (
-                          <Dialog key={slot.startTime} open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-full rounded-xl border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-600 text-sm font-medium transition-colors"
-                                onClick={() => { setSelectedSlot(slot); form.reset() }}
-                              >
-                                {slot.formatted}
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-white dark:bg-slate-900 rounded-2xl border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
-                              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
-                                <DialogHeader>
-                                  <DialogTitle className="text-xl font-bold text-white">Book Appointment</DialogTitle>
-                                  <p className="text-blue-200 text-sm">with {doctor.name} · {slot.formatted}</p>
-                                </DialogHeader>
-                              </div>
-                              <div className="p-6">
-                                <Form {...form}>
-                                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <FormField
-                                      control={form.control}
-                                      name="description"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel className="text-sm font-semibold text-slate-700 dark:text-slate-300">Description of Symptoms</FormLabel>
-                                          <FormControl>
-                                            <Textarea
-                                              placeholder="Please describe your symptoms in detail..."
-                                              className="rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 resize-none"
-                                              {...field}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    <FormField
-                                      control={form.control}
-                                      name="notes"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel className="text-sm font-semibold text-slate-700 dark:text-slate-300">Additional Notes (Optional)</FormLabel>
-                                          <FormControl>
-                                            <Textarea
-                                              placeholder="Any additional information you'd like to share..."
-                                              className="rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 resize-none"
-                                              {...field}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    <Button
-                                      type="submit"
-                                      disabled={isSubmitting}
-                                      className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl gap-2 shadow-md shadow-blue-500/20"
-                                    >
-                                      {isSubmitting ? (
-                                        <><Loader2 className="h-4 w-4 animate-spin" /> Booking...</>
-                                      ) : (
-                                        <><CheckCircle2 className="h-4 w-4" /> Confirm Booking</>
-                                      )}
-                                    </Button>
-                                  </form>
-                                </Form>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            key={slot.startTime}
+                            variant="outline"
+                            className="w-full rounded-xl border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-600 text-sm font-medium transition-colors"
+                            onClick={() => { setSelectedSlot(slot); form.reset(); setIsDialogOpen(true); }}
+                          >
+                            {slot.formatted}
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -235,6 +173,71 @@ export default function DoctorProfile({ doctor, availableDays }: DoctorProfilePr
           </div>
         </div>
       </div>
+
+      {/* Single Booking Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-white dark:bg-slate-900 rounded-2xl border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-white">Book Appointment</DialogTitle>
+              {selectedSlot && (
+                <p className="text-blue-200 text-sm">with {doctor.name} · {selectedSlot.formatted}</p>
+              )}
+            </DialogHeader>
+          </div>
+          <div className="p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold text-slate-700 dark:text-slate-300">Description of Symptoms</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Please describe your symptoms in detail..."
+                          className="rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold text-slate-700 dark:text-slate-300">Additional Notes (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Any additional information you'd like to share..."
+                          className="rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl gap-2 shadow-md shadow-blue-500/20"
+                >
+                  {isSubmitting ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Booking...</>
+                  ) : (
+                    <><CheckCircle2 className="h-4 w-4" /> Confirm Booking</>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

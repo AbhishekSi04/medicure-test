@@ -168,7 +168,7 @@ export default function Home() {
       )}
 
       {/* ── HERO SECTION ────────────────────────────────────────────── */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden px-1">
         {/* Background gradient mesh */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30 pointer-events-none" />
         {/* Decorative blobs */}

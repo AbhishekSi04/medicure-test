@@ -3,7 +3,7 @@
 
 import { PricingTable, SignedIn, useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
-import { checkAndAllocateCredits, getCurrentSubscriptionPlan } from "@/actions/credits";
+import { checkAndAllocateCredits } from "@/actions/credits";
 import { checkUser } from "@/lib/checkUser";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,28 +34,21 @@ export default function Home() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   useEffect(() => {
-    const handleSubscriptionChange = async () => {
-      if (clerkUser) {
-        const subscriptionResult = await getCurrentSubscriptionPlan();
-        const currentPlan = subscriptionResult.plan;
-        const lastPlan = localStorage.getItem("lastPlan");
-
-        if (lastPlan === null) {
-          localStorage.setItem("lastPlan", currentPlan);
-        } else if (currentPlan !== lastPlan) {
-          localStorage.setItem("lastPlan", currentPlan);
-          const dbUser = await checkUser();
-          if (!('error' in dbUser) && (dbUser as any).role === 'PATIENT') {
-            await checkAndAllocateCredits(dbUser);
-          }
+    const allocateIfNeeded = async () => {
+      if (!clerkUser) return;
+      try {
+        const dbUser = await checkUser();
+        if (!('error' in dbUser) && (dbUser as any).role === 'PATIENT') {
+          await checkAndAllocateCredits(dbUser);
         }
+      } catch (err) {
+        console.error("[Home] Credit allocation error:", err);
       }
     };
 
-    handleSubscriptionChange();
-    const interval = setInterval(handleSubscriptionChange, 10000);
-    return () => clearInterval(interval);
+    allocateIfNeeded();
   }, [clerkUser]);
+
 
   const features = [
     {

@@ -177,12 +177,12 @@ export function VideoCallModal({
 
           {/* ── Video area ── */}
           <div className="relative flex-1 bg-slate-900 overflow-hidden" style={{ minHeight: "380px" }}>
-            {/* Remote video (full) */}
+            {/* Remote video — absolute fill so it always covers the area regardless of flex height */}
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
 
             {/* Loading overlay */}

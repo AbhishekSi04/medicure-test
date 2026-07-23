@@ -1,60 +1,91 @@
-// import { redirect } from "next/navigation";
-// import Link from "next/link";
-import { Shield } from "lucide-react";
+import { Shield, CreditCard, CheckCircle2, Mail } from "lucide-react";
 import { PricingTable } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
-// import { Card, CardContent } from "@/components/ui/card";
 
 export default async function PricingPage() {
   return (
-    <div className="relative min-h-screen ">
-      {/* Decorative background shapes */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-200/30 dark:bg-blue-900/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[200px] bg-blue-400/10 dark:bg-blue-800/20 rounded-full blur-2xl" />
-      </div>
-      <div className="container relative z-0 mx-auto px-4 py-12 flex flex-col items-center">
-        {/* Header Section */}
-        <div className="max-w-full mx-auto mb-12 text-center">
-          <Badge
-            variant="outline"
-            className="bg-blue-100 dark:bg-blue-900/30 border-blue-400/30 dark:border-blue-700/30 px-4 py-1 text-blue-600 dark:text-blue-300 text-sm font-medium mb-4 shadow-sm"
-          >
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* ── Page Header ── */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 py-14 px-4">
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <div className="absolute -top-16 -left-16 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-indigo-400/20 rounded-full blur-3xl" />
+
+        <div className="relative max-w-3xl mx-auto text-center">
+          <Badge className="mb-5 bg-white/15 border border-white/25 text-white text-sm font-medium px-4 py-1.5">
             Affordable Healthcare
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-blue-500 dark:bg-blue-400 bg-clip-text text-transparent mb-4 drop-shadow-sm">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 border border-white/20 mb-5">
+            <CreditCard className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-4">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl mx-auto">
-            Choose the perfect consultation package that fits your healthcare
-            needs with no hidden fees or long-term commitments
+          <p className="text-blue-200 text-lg max-w-xl mx-auto">
+            Choose the perfect plan for your healthcare needs — no hidden fees, no long-term commitments.
           </p>
         </div>
-        {/* Pricing Table Section */}
-        <section className="w-full py-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white mb-3">
-                Choose Your Plan
-              </h2>
-              <p className="text-xl text-zinc-500 dark:text-zinc-400">
-                Flexible pricing options to meet your healthcare needs
-              </p>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+        {/* ── Trust Badges ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { icon: Shield, title: "HIPAA Compliant", desc: "Your health data is fully secured", color: "text-blue-500" },
+            { icon: CheckCircle2, title: "No Hidden Fees", desc: "Transparent pricing always", color: "text-emerald-500" },
+            { icon: CreditCard, title: "Cancel Anytime", desc: "No long-term commitments", color: "text-indigo-500" },
+          ].map(({ icon: Icon, title, desc, color }) => (
+            <div key={title} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                <Icon className={`w-6 h-6 ${color}`} />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 dark:text-white text-sm">{title}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">{desc}</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 sm:p-10 border border-blue-100 dark:border-blue-900/30 flex flex-col items-center">
-              <PricingTable />
-            </div>
+          ))}
+        </div>
+
+        {/* ── Pricing Table ── */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-10">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Choose Your Plan
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400">
+              Flexible options to meet your healthcare needs
+            </p>
           </div>
-        </section>
-        {/* FAQ Section */}
-        <div className="max-w-3xl mx-auto mt-16 text-center bg-blue-50 dark:bg-blue-900/10 rounded-2xl shadow-lg p-8 border border-blue-100 dark:border-blue-900/20">
-          <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-2 flex items-center justify-center gap-2">
-            <Shield className="h-6 w-6 text-blue-400 dark:text-blue-500" />
-            Questions? We are Here to Help
-          </h2>
-          <p className="text-zinc-600 dark:text-zinc-300 mb-4">
-            Contact our support team at <a href="mailto:abhisheksingh159084@gmail.com" className="underline text-blue-600 dark:text-blue-400">support@medimeet.com</a>
-          </p>
+          <PricingTable />
+        </div>
+
+        {/* ── FAQ / Support Banner ── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center">
+          <div
+            className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }}
+          />
+          <div className="relative">
+            <Shield className="w-10 h-10 text-white mx-auto mb-3 opacity-80" />
+            <h3 className="text-xl font-bold text-white mb-2">Questions? We&apos;re here to help</h3>
+            <p className="text-blue-200 mb-4">
+              Contact our support team — we&apos;ll get back to you within 24 hours.
+            </p>
+            <a
+              href="mailto:abhisheksingh159084@gmail.com"
+              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 border border-white/25 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors"
+            >
+              <Mail className="w-4 h-4" />
+              Contact Support
+            </a>
+          </div>
         </div>
       </div>
     </div>

@@ -1,28 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { useState } from "react";
-import { Mail, Phone, MapPin, Send,  XCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Send, XCircle, Loader2, Clock, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { sendContactEmail } from "@/actions/contact";
 import { toast } from "sonner";
+
+const contactInfo = [
+  {
+    icon: Mail,
+    label: "Email",
+    value: "abhisheksingh159084@gmail.com",
+    color: "from-blue-500 to-indigo-600",
+  },
+  {
+    icon: Phone,
+    label: "Phone",
+    value: "+1 (555) 123-4567",
+    color: "from-emerald-500 to-teal-600",
+  },
+  {
+    icon: MapPin,
+    label: "Location",
+    value: "ABV-IIITM Gwalior",
+    color: "from-violet-500 to-purple-600",
+  },
+];
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [loading, setLoading] = useState(false);
-  // const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    // setSuccess(null);
     setError(null);
     try {
       const res = await sendContactEmail(form);
       if (res && res.success) {
-        // setSuccess("Your message has been sent! We'll get back to you soon.");
-        toast.success("Your message has been sent! We'll get back to you soon.")
+        toast.success("Your message has been sent! We'll get back to you soon.");
         setForm({ name: "", email: "", message: "" });
       } else {
         setError("Failed to send message. Please try again later.");
@@ -35,102 +52,143 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="relative min-h-screen ">
-      {/* Decorative background shapes */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-200/30 dark:bg-blue-900/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[200px] bg-blue-400/10 dark:bg-blue-800/20 rounded-full blur-2xl" />
-      </div>
-      <div className="container relative z-10 mx-auto px-4 py-12 flex flex-col items-center">
-        {/* Header Section */}
-        <div className="max-w-full mx-auto mb-10 text-center">
-          <Badge
-            variant="outline"
-            className="bg-blue-100 dark:bg-blue-900/30 border-blue-400/30 dark:border-blue-700/30 px-4 py-1 text-blue-600 dark:text-blue-300 text-sm font-medium mb-4 shadow-sm"
-          >
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* ── Page Header ── */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 py-14 px-4">
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }}
+        />
+        <div className="absolute -top-16 -left-16 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-indigo-400/20 rounded-full blur-3xl" />
+
+        <div className="relative max-w-3xl mx-auto text-center">
+          <Badge className="mb-5 bg-white/15 border border-white/25 text-white text-sm font-medium px-4 py-1.5">
             Get in Touch
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-blue-500 bg-clip-text text-transparent mb-4 drop-shadow-sm">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 border border-white/20 mb-5">
+            <MessageSquare className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-4">
             Contact Us
           </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl mx-auto">
-            We&apos;re here to help! Reach out with your questions, feedback, or partnership inquiries.
+          <p className="text-blue-200 text-lg max-w-xl mx-auto">
+            We&apos;re here to help with questions, feedback, or partnership inquiries.
           </p>
         </div>
-        {/* Contact Card & Form */}
-        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-          {/* Contact Info Card */}
-          <Card className="bg-white/90 dark:bg-slate-900/90 border border-blue-100 dark:border-blue-900/30 rounded-2xl shadow-xl flex flex-col justify-between">
-            <CardContent className="p-8 flex flex-col gap-6 h-full">
-              <div className="flex items-center gap-3">
-                <Mail className="h-6 w-6 text-blue-500 dark:text-blue-400" />
-                <span className="text-zinc-700 dark:text-zinc-200 text-base font-medium">abhisheksingh159084@gmail.com</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Phone className="h-6 w-6 text-blue-500 dark:text-blue-400" />
-                <span className="text-zinc-700 dark:text-zinc-200 text-base font-medium">+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="h-6 w-6 text-blue-500 dark:text-blue-400" />
-                <span className="text-zinc-700 dark:text-zinc-200 text-base font-medium">ABV-IIITM Gwalior</span>
-              </div>
-              <div className="mt-8">
-                <h2 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Support Hours</h2>
-                <p className="text-zinc-600 dark:text-zinc-400 text-sm">Monday - Friday: 8:00 AM - 8:00 PM<br />Saturday - Sunday: 9:00 AM - 5:00 PM</p>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Contact Form */}
-          <Card className="bg-white/90 dark:bg-slate-900/90 border border-blue-100 dark:border-blue-900/30 rounded-2xl shadow-xl flex flex-col justify-between">
-            <CardContent className="p-8 flex flex-col gap-6 h-full">
-              <form className="flex flex-col gap-5" onSubmit={onSubmit}>
-                <div>
-                  <label htmlFor="name" className="block text-zinc-700 dark:text-zinc-200 font-medium mb-1">Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    placeholder="Your Name"
-                    className="w-full px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition"
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    required
-                  />
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* ── Contact Info ── */}
+          <div className="space-y-4">
+            {contactInfo.map(({ icon: Icon, label, value, color }) => (
+              <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                  <Icon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-zinc-700 dark:text-zinc-200 font-medium mb-1">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="you@email.com"
-                    className="w-full px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition"
-                    value={form.email}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    required
-                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-0.5">{label}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-white">{value}</p>
                 </div>
-                <div>
-                  <label htmlFor="message" className="block text-zinc-700 dark:text-zinc-200 font-medium mb-1">Message</label>
-                  <textarea
-                    id="message"
-                    rows={4}
-                    placeholder="How can we help you?"
-                    className="w-full px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition resize-none"
-                    value={form.message}
-                    onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                    required
-                  />
+              </div>
+            ))}
+
+            {/* Support Hours */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
-                <button
-                  type="submit"
-                  className="mt-2 w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 rounded-lg shadow transition disabled:opacity-60"
-                  disabled={loading}
-                >
-                  {loading ? <span>Sending...</span> : <><Send className="h-5 w-5" />Send Message</>}
-                </button>
-                {error && <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm mt-2"><XCircle className="h-4 w-4" />{error}</div>}
-              </form>
-            </CardContent>
-          </Card>
+                <p className="font-bold text-slate-800 dark:text-white">Support Hours</p>
+              </div>
+              <div className="space-y-1.5 pl-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">Monday – Friday</span>
+                  <span className="font-semibold text-slate-800 dark:text-white">8:00 AM – 8:00 PM</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">Saturday – Sunday</span>
+                  <span className="font-semibold text-slate-800 dark:text-white">9:00 AM – 5:00 PM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Contact Form ── */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Send us a message</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">We&apos;ll reply within 24 hours</p>
+            </div>
+
+            <form className="p-6 space-y-4" onSubmit={onSubmit}>
+              <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Your Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition text-sm"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition text-sm"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="message" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Message
+                </label>
+                <textarea
+                  id="message"
+                  rows={5}
+                  placeholder="How can we help you?"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition resize-none text-sm"
+                  value={form.message}
+                  onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md shadow-blue-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+              >
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                ) : (
+                  <><Send className="h-4 w-4" /> Send Message</>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

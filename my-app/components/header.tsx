@@ -1,160 +1,148 @@
 'use client'
 
 import { checkUser } from "@/lib/checkUser";
-import { SignInButton, SignedIn, SignedOut, UserButton} from "@clerk/nextjs";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { ShieldCheck, Stethoscope, Calendar, User as UserIcon, CreditCard } from "lucide-react";
+import { ShieldCheck, Stethoscope, Calendar, User as UserIcon, CreditCard, Menu, X } from "lucide-react";
 import { User } from "@/lib/generated/prisma";
-// import { checkAndAllocateCredits } from "@/actions/credits";
 import { Badge } from "./ui/badge";
-import Logo from '@/assets/Logo.png'
+import Logo from '@/assets/Logo.png';
 import { ThemeToggle, ThemeToggleMobile } from "./theme-toggle";
-
-// type UserResponse = User | { error: string };
 
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  
   useEffect(() => {
     const fetchUser = async () => {
       const response = await checkUser();
       if (!('error' in response)) {
         setUser(response);
       }
-      console.log(response); 
-    }
+    };
     fetchUser();
   }, []);
-  
+
+  const navLink = user?.role === "ADMIN"
+    ? { href: "/admin", label: "Admin Dashboard", icon: ShieldCheck }
+    : user?.role === "DOCTOR"
+    ? { href: "/doctor", label: "Doctor Dashboard", icon: Stethoscope }
+    : user?.role === "PATIENT"
+    ? { href: "/appointments", label: "My Appointments", icon: Calendar }
+    : user?.role === "UNASSIGNED"
+    ? { href: "/onboarding", label: "Complete Setup", icon: UserIcon }
+    : null;
+
   return (
-    <div className="max-w-7xl mx-auto flex justify-between items-center py-4 h-16">
-      <div className="flex items-center">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-0 pt-1">
-            <img className="w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center"
-                            src={Logo.src}
-                            alt="Doctor with Laptop"
-                    />
-            <span className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-500">MediCure</span>
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+
+          {/* ── Logo ── */}
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <img
+              src={Logo.src}
+              alt="MediCure Logo"
+              className="w-9 h-9 rounded-xl"
+            />
+            <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+              MediCure
+            </span>
           </Link>
-      </div>
-      <div className="flex justify-end items-center px-3 gap-2 md:px-0 md:gap-4">
-        {/* Theme Toggle */}
-        <ThemeToggle />
-        <ThemeToggleMobile />
 
-        {/* Action Buttons */}
-        <SignedIn>
+          {/* ── Desktop Nav ── */}
+          <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
 
-          {/* Admin Links */}
-          {user?.role === "ADMIN" && (
-            <Link href="/admin">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:inline-flex items-center gap-2"
-              >
-                <ShieldCheck className="h-5 w-5" />
-                Admin Dashboard
-              </Button>
-              <Button variant="ghost" size="sm" className="md:hidden w-8 h-8 p-0">
-                <ShieldCheck className="h-5 w-5" />
-              </Button>
-            </Link>
-          )}
+            <SignedIn>
+              {/* Role-based nav link */}
+              {navLink && (
+                <Link href={navLink.href}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl font-medium"
+                  >
+                    <navLink.icon className="h-4 w-4" />
+                    {navLink.label}
+                  </Button>
+                </Link>
+              )}
 
-          {/* Doctor Links */}
-          {user?.role === "DOCTOR" && (
-            <Link href="/doctor">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:inline-flex items-center gap-2"
-              >
-                <Stethoscope className="h-4 w-4" />
-                Doctor Dashboard
-              </Button>
-              <Button variant="ghost" size="sm" className="md:hidden w-8 h-8 p-0">
-                <Stethoscope className="h-4 w-4" />
-              </Button>
-            </Link>
-          )}
-
-          {/* Patient Links */}
-          {user?.role === "PATIENT" && (
-            <Link href="/appointments">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:inline-flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                My Appointments
-              </Button>
-              <Button variant="ghost" size="sm" className="md:hidden w-8 h-8 p-0">
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </Link>
-          )}
-
-          {/* Unassigned Role */}
-          {user?.role === "UNASSIGNED" && (
-            <Link href="/onboarding">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:inline-flex items-center gap-2 text-white bg-blue-500 dark:bg-blue-500 hover:dark:bg-blue-600"
-              >
-                <UserIcon className="h-4 w-4" />
-                Register
-              </Button>
-              <Button variant="ghost" size="sm" className="md:hidden w-8 h-8 p-0">
-                <UserIcon className="h-4 w-4" />
-              </Button>
-            </Link>
-          )}
-        
-
-          {(!user || user?.role !== "ADMIN" )  && (
-              <Link href={(user?.role === "DOCTOR" ) ? "/doctor" : "/pricing"}>
-                <Badge
-                  variant="outline"
-                  className="h-7 md:h-9 bg-emerald-900/20 border-emerald-700/30 px-2 md:px-3 py-1 flex items-center gap-1 md:gap-2 text-xs md:text-sm"
-                >
-                  <CreditCard className="h-3 w-3 md:h-3.5 md:w-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">
+              {/* Credits / Pricing badge */}
+              {(!user || user?.role !== "ADMIN") && (
+                <Link href={user?.role === "DOCTOR" ? "/doctor" : "/pricing"}>
+                  <Badge className="h-9 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 px-3 py-1 gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors cursor-pointer font-medium">
+                    <CreditCard className="h-3.5 w-3.5" />
                     {user && user.role !== "ADMIN" ? (
-                      <>
-                        {user.credits}{" "}
-                        <span className="hidden md:inline">
-                          {user?.role === "PATIENT"
-                            ? "Credits"
-                            : "Earned Credits"}
-                        </span>
-                      </>
+                      <span>{user.credits} {user?.role === "PATIENT" ? "Credits" : "Earned"}</span>
                     ) : (
-                      <>Pricing</>
+                      <span>Pricing</span>
                     )}
-                  </span>
-                </Badge>
-              </Link>
-          )}
+                  </Badge>
+                </Link>
+              )}
 
-        </SignedIn>
+              <UserButton />
+            </SignedIn>
 
-        <SignedOut>
-          <div className="bg-blue-600 hover:bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 md:px-5 py-1 text-sm md:text-base font-semibold w-full sm:w-auto border rounded-md">
-            <SignInButton />
+            <SignedOut>
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-5 py-2 text-sm font-semibold rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 cursor-pointer">
+                <SignInButton />
+              </div>
+            </SignedOut>
           </div>
-          {/* <SignUpButton /> */}
-        </SignedOut>
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
+
+          {/* ── Mobile Controls ── */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggleMobile />
+
+            <SignedIn>
+              {(!user || user?.role !== "ADMIN") && (
+                <Link href={user?.role === "DOCTOR" ? "/doctor" : "/pricing"}>
+                  <Badge className="h-8 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 px-2 gap-1 text-xs font-medium">
+                    <CreditCard className="h-3 w-3" />
+                    {user ? user.credits : "Plan"}
+                  </Badge>
+                </Link>
+              )}
+              <UserButton />
+              {navLink && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-8 h-8 p-0 rounded-lg"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </Button>
+              )}
+            </SignedIn>
+
+            <SignedOut>
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold rounded-lg cursor-pointer">
+                <SignInButton />
+              </div>
+            </SignedOut>
+          </div>
+        </div>
+
+        {/* ── Mobile Dropdown ── */}
+        {mobileMenuOpen && navLink && (
+          <div className="md:hidden border-t border-slate-100 dark:border-slate-800 py-3">
+            <Link
+              href={navLink.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-2 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+            >
+              <navLink.icon className="h-5 w-5 text-blue-500" />
+              <span className="font-medium">{navLink.label}</span>
+            </Link>
+          </div>
+        )}
       </div>
-    </div>
-  )
+    </header>
+  );
 }

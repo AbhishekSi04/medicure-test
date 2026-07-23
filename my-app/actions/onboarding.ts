@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { checkUser } from "@/lib/checkUser";
 
 /**
  * Sets the user's role and related information
@@ -14,12 +15,19 @@ export async function setUserRole(formData: any) {
     throw new Error("Unauthorized");
   }
   console.log(userId);
-  // Find user in our database
-  const user = await db.user.findUnique({
+  // Find user in our database or create via checkUser
+  let user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
 
-  if (!user) throw new Error("User not found in database");
+  if (!user) {
+    const result = await checkUser();
+    if (result && 'error' in result) {
+      throw new Error(result.error);
+    }
+    user = result as any;
+    if (!user) throw new Error("User not found in database and failed to create");
+  }
 
   const role = formData.get("role");
 

@@ -2,28 +2,25 @@
 "use client"
 
 import { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog';
-import { Button } from '../../../../components/ui/button';
-import { Input } from '../../../../components/ui/input';
-import { Card, CardContent } from '../../../../components/ui/card';
-import { User, Bot, Send, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '../../../../components/ui/dialog';
+import { User, Send, Loader2, MessageSquare, X, Stethoscope } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { sendMessage, getChatHistory, convertClerkIdToUuuid } from '@/actions/message';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SERVER_URL || "http://localhost:3002"; // Use environment variable for production
+const SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SERVER_URL || "http://localhost:3002";
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   doctor: any;
-  patient: any; // Now required for full chat
-  chatRoomId: string; // Now required for full chat
+  patient: any;
+  chatRoomId: string;
 }
 
 interface Message {
   role: 'user' | 'doctor';
   content: string;
-  timestamp: string; // ISO string for easier transport
+  timestamp: string;
   senderName?: string;
   senderId?: string;
 }
@@ -35,8 +32,9 @@ export default function ChatModal({ isOpen, onClose, doctor, patient, chatRoomId
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load chat history from DB when modal opens
+  // Load chat history
   useEffect(() => {
     if (!isOpen || !chatRoomId) return;
     const loadHistory = async () => {
@@ -44,7 +42,6 @@ export default function ChatModal({ isOpen, onClose, doctor, patient, chatRoomId
       try {
         const history = await getChatHistory(chatRoomId);
         const patientUUID = await convertClerkIdToUuuid(patient.id);
-        // console.log(patientUUID);
         const formatted: Message[] = history.map((msg: any) => ({
           role: msg.senderId === patientUUID ? 'user' : 'doctor',
           content: msg.content,
@@ -52,7 +49,7 @@ export default function ChatModal({ isOpen, onClose, doctor, patient, chatRoomId
           senderName: msg.senderId === patientUUID ? 'You' : (msg.sender?.name || doctor?.name || 'Doctor'),
           senderId: msg.senderId,
         }));
-        console.log(formatted)
+        console.log(formatted);
         setMessages(formatted);
       } catch (err) {
         console.error('Failed to load chat history:', err);
@@ -63,29 +60,26 @@ export default function ChatModal({ isOpen, onClose, doctor, patient, chatRoomId
     loadHistory();
   }, [isOpen, chatRoomId, patient.id, doctor?.name]);
 
-  // Connect to Socket.IO and join room when modal opens
+  // Socket.IO connection
   useEffect(() => {
     if (!isOpen || !chatRoomId) return;
     const socket = io(SOCKET_URL);
     socketRef.current = socket;
     socket.emit("joinRoom", { chatRoomId });
-
     socket.on("receiveMessage", (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
     });
-
     return () => {
       socket.emit("leaveRoom", { chatRoomId });
       socket.disconnect();
     };
   }, [isOpen, chatRoomId]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Send message: real-time (Socket.IO) + persist to DB
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !socketRef.current || !chatRoomId || !patient?.id) return;
     setIsLoading(true);
@@ -97,17 +91,11 @@ export default function ChatModal({ isOpen, onClose, doctor, patient, chatRoomId
       senderId: patient.id,
     };
     try {
-      // Emit real-time message
       socketRef.current.emit("sendMessage", { chatRoomId, message: msg });
-      // Persist to DB
-      await sendMessage({
-        chatRoomId,
-        senderId: patient.id,
-        messageType: 'TEXT',
-        content: inputMessage.trim(),
-      });
+      await sendMessage({ chatRoomId, senderId: patient.id, messageType: 'TEXT', content: inputMessage.trim() });
       setMessages(prev => [...prev, msg]);
       setInputMessage('');
+      inputRef.current?.focus();
     } catch (err) {
       console.error('Failed to send message:', err);
       alert('Failed to send message. Please try again.');
@@ -117,128 +105,165 @@ export default function ChatModal({ isOpen, onClose, doctor, patient, chatRoomId
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
-  const formatTime = (iso: string) => {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // Helper to format date for separator
-  const formatDate = (iso: string) => {
-    const date = new Date(iso);
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  // Chat heading and context
-  const chatHeading = `Message Dr. ${doctor?.name}`;
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] h-[80vh] flex flex-col p-0 bg-white dark:bg-slate-900 border border-border dark:border-slate-700">
-        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-border dark:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-full shadow">
-                <User className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                  {chatHeading}
-                </DialogTitle>
-              </div>
+      <DialogContent className="sm:max-w-[560px] h-[85vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-950 gap-0">
+        <DialogTitle className="sr-only">Chat with Doctor</DialogTitle>
+
+        {/* ── Header ── */}
+        <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 flex-shrink-0">
+          {/* Doctor avatar */}
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center flex-shrink-0">
+              <Stethoscope className="h-5 w-5 text-white" />
             </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white dark:border-slate-950" />
           </div>
-        </DialogHeader>
-        {/* Chat messages */}
-        <div className="flex-1 overflow-y-auto p-4 bg-white dark:bg-slate-900 hide-scrollbar-desktop">
+
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-sm truncate">Dr. {doctor?.name || 'Doctor'}</p>
+            <p className="text-blue-200 text-xs">{doctor?.specialty || 'Healthcare Professional'}</p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors flex-shrink-0"
+          >
+            <X className="h-4 w-4 text-white" />
+          </button>
+        </div>
+
+        {/* ── Messages area ── */}
+        <div
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-1"
+          style={{
+            background: "var(--chat-bg, #f8fafc)",
+            backgroundImage: "radial-gradient(circle at 1px 1px, rgba(99,102,241,0.04) 1px, transparent 0)",
+            backgroundSize: "24px 24px",
+          }}
+        >
+          <style jsx>{`
+            :global(.dark) { --chat-bg: #020617; }
+          `}</style>
+
           {isLoadingHistory ? (
-            <div className="text-center text-zinc-400 mt-10">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-              Loading chat history...
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Loading messages...</p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="text-center text-zinc-400 mt-10">No messages yet. Say hello!</div>
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                <MessageSquare className="h-7 w-7 text-blue-400" />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No messages yet</p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs max-w-[200px]">
+                Say hello to Dr. {doctor?.name || 'your doctor'}!
+              </p>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {(() => {
-                let lastDate: string | null = null;
-                return messages.map((message, index) => {
-                  const messageDate = formatDate(message.timestamp);
-                  const showDate = messageDate !== lastDate;
-                  lastDate = messageDate;
-                  return (
-                    <div key={`msg-group-${messageDate}-${index}`}>
-                      {showDate && (
-                        <div key={`date-${messageDate}-${index}`} className="flex justify-center my-2">
-                          <span className="px-4 py-1 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shadow-sm">
-                            {messageDate}
-                          </span>
-                        </div>
-                      )}
-                      <div
-                        className={`flex ${message.role==='user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[80%] ${message.role==='user' ? 'order-2' : 'order-1'}`}>
-                          <Card className={`rounded-xl shadow-md ${message.role==='user' ? 'bg-blue-500 dark:bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700'}`}>
-                            <CardContent className="p-3">
-                              <div className="flex items-start gap-2">
-                                {message.role !=='user' && (
-                                  <Bot className="h-4 w-4 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                                )}
-                                <div className="flex-1">
-                                  <div className={`font-bold text-xs mb-1 ${message.role==='user' ? 'text-white/80' : 'text-blue-500 dark:text-blue-400'}`}> 
-                                    {message.role==='user' ? 'YOU' : `Dr. ${doctor?.name || 'Doctor'}`}
-                                  </div>
-                                  <p className="text-sm whitespace-pre-wrap">
-                                    {message.content}
-                                  </p>
-                                  <p className={`text-xs mt-2 ${message.role==='user' ? 'text-blue-100 dark:text-blue-200' : 'text-zinc-500 dark:text-zinc-400'}`}> 
-                                    {formatTime(message.timestamp)}
-                                  </p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+            (() => {
+              let lastDate: string | null = null;
+              return messages.map((message, index) => {
+                const messageDate = formatDate(message.timestamp);
+                const showDate = messageDate !== lastDate;
+                lastDate = messageDate;
+                const isUser = message.role === 'user';
+
+                return (
+                  <div key={`msg-${index}`}>
+                    {/* Date separator */}
+                    {showDate && (
+                      <div className="flex justify-center my-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400 backdrop-blur-sm">
+                          {messageDate}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Message bubble */}
+                    <div className={`flex items-end gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {/* Avatar */}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${isUser ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-slate-500 to-slate-700'}`}>
+                        {isUser
+                          ? <User className="h-3.5 w-3.5 text-white" />
+                          : <Stethoscope className="h-3.5 w-3.5 text-white" />
+                        }
+                      </div>
+
+                      {/* Bubble */}
+                      <div className="max-w-[72%] group">
+                        {/* Sender name */}
+                        <p className={`text-[10px] font-semibold mb-1 px-1 ${isUser ? 'text-right text-blue-600 dark:text-blue-400' : 'text-left text-slate-500 dark:text-slate-400'}`}>
+                          {isUser ? 'You' : `Dr. ${doctor?.name || 'Doctor'}`}
+                        </p>
+
+                        <div
+                          className={`relative px-4 py-2.5 rounded-2xl shadow-sm transition-shadow group-hover:shadow-md ${
+                            isUser
+                              ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-tr-sm'
+                              : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-sm'
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                          <p className={`text-[10px] mt-1.5 ${isUser ? 'text-blue-100/80 text-right' : 'text-slate-400 dark:text-slate-500 text-right'}`}>
+                            {formatTime(message.timestamp)}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  );
-                });
-              })()}
-              <div ref={messagesEndRef} />
-            </div>
+                  </div>
+                );
+              });
+            })()
           )}
+          <div ref={messagesEndRef} />
         </div>
-        {/* Input area */}
-        <div className="p-4 border-t bg-white dark:bg-zinc-900 rounded-b-2xl">
-          <div className="flex gap-2 items-center">
-            <Input
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              disabled={isLoading || isLoadingHistory}
-              className="flex-1 bg-zinc-100 dark:bg-zinc-800 border-0 focus:ring-2   rounded-full px-4 py-2 text-zinc-900 dark:text-zinc-100 shadow-sm"
-            />
-            <Button
+
+        {/* ── Input area ── */}
+        <div className="flex-shrink-0 px-4 py-3.5 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                disabled={isLoading || isLoadingHistory}
+                className="w-full px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 focus:border-transparent text-sm transition-all disabled:opacity-50"
+              />
+            </div>
+
+            <button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isLoading || isLoadingHistory}
-              size="icon"
-              className="rounded-full bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-md transition-colors"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/25 disabled:shadow-none transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 text-white animate-spin" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 text-white translate-x-px" />
               )}
-            </Button>
+            </button>
           </div>
+
+          <p className="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-2">
+            Press Enter to send · Shift+Enter for new line
+          </p>
         </div>
       </DialogContent>
     </Dialog>
   );
-} 
+}
